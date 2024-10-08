@@ -24,6 +24,13 @@
             <version>1.1.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-events</artifactId>
+            <version>3.11.0</version> <!-- Adjust version based on your needs -->
+        </dependency>
+
+
 
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -95,6 +102,12 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>2.11.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.15.2</version> <!-- Adjust the version as necessary -->
         </dependency>
 
     </dependencies>

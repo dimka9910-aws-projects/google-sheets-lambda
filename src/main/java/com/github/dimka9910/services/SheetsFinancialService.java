@@ -6,25 +6,32 @@ import com.google.api.services.sheets.v4.model.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 public class SheetsFinancialService {
 
     private Sheets sheetsService;
-    private String sheetID = "1Q2ed7pc5MSu7ME44bshG7qzd6xkpc_p0nNbrc2roTZA";
+    private String sheetID = "15tFk4EHb9NAhg9JJS-tj4IywLzd2DfVn_5hbnMitfCM";
     private String LAST_ROW_CELL = "B1";
-    private String SHEET_NAME = "EXPENSES";
+    private final String EX_SHEET_NAME;
 
-    private MapToExpenses mapToExpenses = new MapToExpenses();
+    private final String TRANSFER_SHEET_NAME = "TRANSFERS";
+    private final String HOME_PAGE = "DASHBOARD_DIMA";
+
+    private MapToRowList mapToExpenses = new MapToRowList();
 
     public SheetsFinancialService(Sheets sheetsService) {
         this.sheetsService = sheetsService;
+        try {
+            String range = HOME_PAGE + '!' + "F1";
+            ValueRange response = sheetsService.spreadsheets().values()
+                    .get(sheetID, range)
+                    .execute();
+            EX_SHEET_NAME = response.getValues().get(0).get(0).toString().trim();
+        } catch (Exception e) {
+            throw new RuntimeException("CAN'T GET SHEET NAME: " + e.getMessage(), e);
+        }
     }
 
     private Integer getLastRowNum(String sheetName) {
@@ -40,57 +47,36 @@ public class SheetsFinancialService {
         }
     }
 
-    private String getRange(Integer rowToPlace) {
-        return SHEET_NAME + "!B" + rowToPlace + ":I" + rowToPlace;
+    private String getRangeForExpenses(Integer rowToPlace) {
+        return EX_SHEET_NAME + "!B" + rowToPlace + ":I" + rowToPlace;
+    }
+
+
+    private String getRangeForTransfer(Integer rowToPlace) {
+        return TRANSFER_SHEET_NAME + "!B" + rowToPlace + ":J" + rowToPlace;
     }
 
     public void handleExpenses(RecordDTO recordDTO) throws IOException {
-        Integer rowToPlace = getLastRowNum(SHEET_NAME);
-        List<List<Object>> values = mapToExpenses.mapRecordDtoToList(recordDTO);
+        Integer rowToPlace = getLastRowNum(EX_SHEET_NAME);
+        List<List<Object>> values = mapToExpenses.mapToExpensesRecordList(recordDTO);
         ValueRange body = new ValueRange().setValues(values);
-        String range = getRange(rowToPlace);
+        String range = getRangeForExpenses(rowToPlace);
 
         Sheets.Spreadsheets.Values.Update request = sheetsService.spreadsheets().values().update(sheetID, range, body);
         request.setValueInputOption("USER_ENTERED");
         log.info(String.valueOf(request.execute()));
     }
 
-    public void handleFundMoneyTransferOperation(RecordDTO recordDTO) throws IOException {
-        Integer rowToPlace = getLastRowNum(SHEET_NAME);
-        List<List<Object>> values = mapToExpenses.mapRecordDtoToList(recordDTO);
+    public void handleTransferOperation(RecordDTO recordDTO) throws IOException {
+        Integer rowToPlace = getLastRowNum(TRANSFER_SHEET_NAME);
+        List<List<Object>> values = mapToExpenses.mapToTranferObject(recordDTO);
+
         ValueRange body = new ValueRange().setValues(values);
-        String range = getRange(rowToPlace);
+        String range = getRangeForTransfer(rowToPlace);
 
         Sheets.Spreadsheets.Values.Update request = sheetsService.spreadsheets().values().update(sheetID, range, body);
         request.setValueInputOption("USER_ENTERED");
         log.info(String.valueOf(request.execute()));
-
-        values = mapToExpenses.mapSecondPerson(recordDTO);
-        body = new ValueRange().setValues(values);
-        range = getRange(rowToPlace+1);
-
-        request = sheetsService.spreadsheets().values().update(sheetID, range, body);
-        request.setValueInputOption("USER_ENTERED");
-        System.out.println(request.execute());
     }
 
-    public void handleInternalTransferOperation(RecordDTO recordDTO) throws IOException {
-        Integer rowToPlace = getLastRowNum(SHEET_NAME);
-        List<List<Object>> values = mapToExpenses.mapRecordDtoToList(recordDTO);
-        ValueRange body = new ValueRange().setValues(values);
-        String range = getRange(rowToPlace);
-
-        Sheets.Spreadsheets.Values.Update request = sheetsService.spreadsheets().values().update(sheetID, range, body);
-        request.setValueInputOption("USER_ENTERED");
-        log.info(String.valueOf(request.execute()));
-
-        recordDTO.setSecondPerson(recordDTO.getUserName());
-        values = mapToExpenses.mapSecondPerson(recordDTO);
-        body = new ValueRange().setValues(values);
-        range = getRange(rowToPlace+1);
-
-        request = sheetsService.spreadsheets().values().update(sheetID, range, body);
-        request.setValueInputOption("USER_ENTERED");
-        System.out.println(request.execute());
-    }
 }
