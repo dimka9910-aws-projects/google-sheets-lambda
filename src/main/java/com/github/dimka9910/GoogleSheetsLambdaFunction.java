@@ -85,6 +85,9 @@ public class GoogleSheetsLambdaFunction implements RequestHandler<SQSEvent, Stri
                     case EXPENSES:
                         sheetsFinancialService.handleExpenses(record);
                         return "OK_EXPENSES";
+                    case CREDIT:
+                        sheetsFinancialService.handleCredit(record);
+                        return "OK_EXPENSES";
                     default:
                         log.error("NO OPERATION TYPE");
                         return "ERROR";

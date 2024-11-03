@@ -1,5 +1,6 @@
 package com.github.dimka9910.services;
 
+import com.github.dimka9910.dto.OperationTypeEnum;
 import com.github.dimka9910.dto.RecordDTO;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.*;
@@ -17,6 +18,7 @@ public class SheetsFinancialService {
     private final String EX_SHEET_NAME;
 
     private final String TRANSFER_SHEET_NAME = "TRANSFERS";
+    private final String FUNDS_SHEET_NAME = "FUNDS";
     private final String HOME_PAGE = "DASHBOARD_DIMA";
 
     private MapToRowList mapToExpenses = new MapToRowList();
@@ -56,6 +58,11 @@ public class SheetsFinancialService {
         return TRANSFER_SHEET_NAME + "!B" + rowToPlace + ":J" + rowToPlace;
     }
 
+    private String getRangeForFunds(Integer rowToPlace) {
+        return FUNDS_SHEET_NAME + "!A" + rowToPlace + ":E" + rowToPlace;
+    }
+
+
     public void handleExpenses(RecordDTO recordDTO) throws IOException {
         Integer rowToPlace = getLastRowNum(EX_SHEET_NAME);
         List<List<Object>> values = mapToExpenses.mapToExpensesRecordList(recordDTO);
@@ -65,6 +72,27 @@ public class SheetsFinancialService {
         Sheets.Spreadsheets.Values.Update request = sheetsService.spreadsheets().values().update(sheetID, range, body);
         request.setValueInputOption("USER_ENTERED");
         log.info(String.valueOf(request.execute()));
+    }
+
+    public void handleCredit(RecordDTO recordDTO) throws IOException {
+        recordDTO.setOperationType(OperationTypeEnum.EXPENSES);
+        handleExpenses(recordDTO);
+
+        Integer rowToPlace = getLastRowNum(FUNDS_SHEET_NAME);
+        List<List<Object>> values = mapToExpenses.mapToFunds(recordDTO);
+        ValueRange body = new ValueRange().setValues(values);
+        String range = getRangeForFunds(rowToPlace);
+        Sheets.Spreadsheets.Values.Update request = sheetsService.spreadsheets().values().update(sheetID, range, body);
+        request.setValueInputOption("USER_ENTERED");
+        log.info(String.valueOf(request.execute()));
+
+
+        recordDTO.setSecondAccount(recordDTO.getAccountName());
+        recordDTO.setSecondPerson(recordDTO.getUserName());
+        recordDTO.setUserName(null);
+        recordDTO.setAccountName(null);
+        recordDTO.setOperationType(OperationTypeEnum.INCOME);
+        handleTransferOperation(recordDTO);
     }
 
     public void handleTransferOperation(RecordDTO recordDTO) throws IOException {
