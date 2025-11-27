@@ -1,5 +1,7 @@
 package com.github.dimka9910.services;
 
+import com.github.dimka9910.dto.ColorEnum;
+import com.github.dimka9910.dto.DebugDTO;
 import com.github.dimka9910.dto.OperationTypeEnum;
 import com.github.dimka9910.dto.RecordDTO;
 import com.google.api.services.sheets.v4.Sheets;
@@ -7,24 +9,30 @@ import com.google.api.services.sheets.v4.model.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 public class SheetsFinancialService {
 
-    private Sheets sheetsService;
-    private String sheetID = "15tFk4EHb9NAhg9JJS-tj4IywLzd2DfVn_5hbnMitfCM";
-    private String LAST_ROW_CELL = "B1";
+    private final Sheets sheetsService;
+    private final String sheetID = "15tFk4EHb9NAhg9JJS-tj4IywLzd2DfVn_5hbnMitfCM";
+    private final String LAST_ROW_CELL = "B1";
     private final String EX_SHEET_NAME;
 
     private final String TRANSFER_SHEET_NAME = "TRANSFERS";
     private final String FUNDS_SHEET_NAME = "FUNDS";
     private final String HOME_PAGE = "DASHBOARD_DIMA";
+    private final String DEBUG_TABLE = "DEBUG_TABLE";
 
     private MapToRowList mapToExpenses = new MapToRowList();
+    private final TableViewHelper tableViewHelper;
+    private final PaintCellHelper paintCellHelper;
+
 
     public SheetsFinancialService(Sheets sheetsService) {
         this.sheetsService = sheetsService;
+        this.tableViewHelper = new TableViewHelper(sheetID, sheetsService);
+        this.paintCellHelper = new PaintCellHelper(sheetID, sheetsService);
         try {
             String range = HOME_PAGE + '!' + "F1";
             ValueRange response = sheetsService.spreadsheets().values()
@@ -62,6 +70,19 @@ public class SheetsFinancialService {
         return FUNDS_SHEET_NAME + "!A" + rowToPlace + ":E" + rowToPlace;
     }
 
+    private String getRangeForRemainData() {
+        return DEBUG_TABLE + "!M3" + ":V14";
+    }
+
+    private String getRangeForRemainsInsert(Integer rowToPlace) {
+        return DEBUG_TABLE + "!A" + rowToPlace + ":F" + rowToPlace;
+    }
+
+    private String getRangeForRemainsInsertColor(Integer rowToPlace) {
+        return DEBUG_TABLE + "!A" + rowToPlace + ":I" + rowToPlace;
+    }
+
+
 
     public void handleExpenses(RecordDTO recordDTO) throws IOException {
         Integer rowToPlace = getLastRowNum(EX_SHEET_NAME);
@@ -97,7 +118,7 @@ public class SheetsFinancialService {
 
     public void handleTransferOperation(RecordDTO recordDTO) throws IOException {
         Integer rowToPlace = getLastRowNum(TRANSFER_SHEET_NAME);
-        List<List<Object>> values = mapToExpenses.mapToTranferObject(recordDTO);
+        List<List<Object>> values = mapToExpenses.mapToTransferObject(recordDTO);
 
         ValueRange body = new ValueRange().setValues(values);
         String range = getRangeForTransfer(rowToPlace);
@@ -107,4 +128,43 @@ public class SheetsFinancialService {
         log.info(String.valueOf(request.execute()));
     }
 
+
+    public void insertIntoDebug(RecordDTO recordDTO) throws IOException {
+
+        if (recordDTO.getAccountRemains() == null) {
+            return;
+        }
+
+        Integer rowToPlace = getLastRowNum(DEBUG_TABLE);
+
+        Map<String, Map<String, Double>> remainsMap = tableViewHelper.getTableAsMap(getRangeForRemainData());
+        System.out.println(remainsMap);
+
+
+        Double accountRemains = remainsMap.get(recordDTO.getAccountName()).get(recordDTO.getCurrency());
+        DebugDTO debugDTO = DebugDTO.builder()
+                .currency(recordDTO.getCurrency())
+                .accountName(recordDTO.getAccountName())
+                .calculatedAmount(accountRemains)
+                .reportedAmount(recordDTO.getAccountRemains())
+                .build();
+
+        List<List<Object>> values = mapToExpenses.mapToDebugObject(debugDTO);
+
+        ValueRange body = new ValueRange().setValues(values);
+        String range = getRangeForRemainsInsert(rowToPlace);
+
+        Sheets.Spreadsheets.Values.Update request = sheetsService.spreadsheets().values().update(sheetID, range, body);
+        request.setValueInputOption("USER_ENTERED");
+        log.info(String.valueOf(request.execute()));
+
+        paintCellHelper.paintRows(getRangeForRemainsInsertColor(rowToPlace),
+                ColorConfigurationService.getColorByAccountNameAndUserName(
+                        recordDTO.getAccountName(),
+                        recordDTO.getUserName()));
+
+    }
 }
+
+
+

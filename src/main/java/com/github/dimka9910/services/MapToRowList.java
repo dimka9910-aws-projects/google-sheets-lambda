@@ -1,5 +1,6 @@
 package com.github.dimka9910.services;
 
+import com.github.dimka9910.dto.DebugDTO;
 import com.github.dimka9910.dto.RecordDTO;
 
 import java.time.LocalDateTime;
@@ -10,10 +11,14 @@ import java.util.Optional;
 
 public class MapToRowList {
 
-    public List<List<Object>> mapToExpensesRecordList(RecordDTO recordDTO){
+
+    private final String DATE_PATTERN = "dd.MM.yyyy HH:mm:ss";
+
+
+    public List<List<Object>> mapToExpensesRecordList(RecordDTO recordDTO) {
 
         List<Object> values = new ArrayList<>();
-        values.add(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")));
+        values.add(LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)));
         values.add(recordDTO.getAmount());
         values.add(recordDTO.getCurrency());
         values.add(recordDTO.getUserName());
@@ -25,9 +30,9 @@ public class MapToRowList {
         return result;
     }
 
-    public List<List<Object>> mapToTranferObject(RecordDTO recordDTO){
+    public List<List<Object>> mapToTransferObject(RecordDTO recordDTO) {
         List<Object> values = new ArrayList<>();
-        values.add(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")));
+        values.add(LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)));
         values.add(recordDTO.getAmount());
         values.add(recordDTO.getCurrency());
         values.add(Optional.ofNullable(recordDTO.getUserName()).orElse(""));
@@ -40,13 +45,25 @@ public class MapToRowList {
         return result;
     }
 
-    public List<List<Object>> mapToFunds(RecordDTO recordDTO){
+    public List<List<Object>> mapToFunds(RecordDTO recordDTO) {
         List<Object> values = new ArrayList<>();
         values.add(recordDTO.getUserName());
         values.add(recordDTO.getAmount());
         values.add(recordDTO.getCurrency());
         values.add(recordDTO.getUserName() + "_CREDIT");
-        values.add(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")));
+        values.add(LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)));
+        List<List<Object>> result = List.of(values);
+        return result;
+    }
+
+    public List<List<Object>> mapToDebugObject(DebugDTO debugDTO) {
+        List<Object> values = new ArrayList<>();
+        values.add(debugDTO.getAccountName());
+        values.add(debugDTO.getCurrency());
+        values.add(debugDTO.getCalculatedAmount());
+        values.add(debugDTO.getReportedAmount());
+        values.add(debugDTO.getCalculatedAmount() - debugDTO.getReportedAmount());
+        values.add(LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)));
         List<List<Object>> result = List.of(values);
         return result;
     }

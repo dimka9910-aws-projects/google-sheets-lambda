@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dimka9910.dto.RecordDTO;
 import com.github.dimka9910.services.SheetsFinancialService;
+import com.github.dimka9910.services.TableViewHelper;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -87,6 +88,9 @@ public class GoogleSheetsLambdaFunction implements RequestHandler<SQSEvent, Stri
                         return "OK_EXPENSES";
                     case CREDIT:
                         sheetsFinancialService.handleCredit(record);
+                        return "OK_EXPENSES";
+                    case DEBUG:
+                        sheetsFinancialService.insertIntoDebug(record);
                         return "OK_EXPENSES";
                     default:
                         log.error("NO OPERATION TYPE");

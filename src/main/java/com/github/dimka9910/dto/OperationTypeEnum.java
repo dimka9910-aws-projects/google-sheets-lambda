@@ -5,5 +5,7 @@ public enum OperationTypeEnum {
     TRANSFER,
     CREDIT,
 
-    EXPENSES
+    EXPENSES,
+
+    DEBUG;
 }

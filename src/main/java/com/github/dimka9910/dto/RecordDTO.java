@@ -21,4 +21,5 @@ public class RecordDTO {
     private String secondPerson;
     private String secondAccount;
     private String secondCurrency;
+    private Double accountRemains;
 }
