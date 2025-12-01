@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Google Sheets Lambda - writes financial records to Google Sheets
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 512
+    Runtime: java17
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, prod]
+
+Resources:
+  # ============ LAMBDA ============
+  GoogleSheetsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub google-sheets-lambda-${Environment}
+      Handler: com.github.dimka9910.GoogleSheetsLambdaFunction::handleRequest
+      CodeUri: .
+      Description: Processes SQS messages and writes to Google Sheets
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: !GetAtt SheetsQueue.QueueName
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SheetsQueue.Arn
+            BatchSize: 1
+
+  # ============ SQS ============
+  SheetsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub sheets-queue-${Environment}
+      VisibilityTimeout: 120
+
+Outputs:
+  FunctionName:
+    Description: Lambda function name
+    Value: !Ref GoogleSheetsFunction
+  
+  FunctionArn:
+    Description: Lambda function ARN
+    Value: !GetAtt GoogleSheetsFunction.Arn
+  
+  SheetsQueueUrl:
+    Description: SQS queue URL for sending records
+    Value: !Ref SheetsQueue
+  
+  SheetsQueueArn:
+    Description: SQS queue ARN
+    Value: !GetAtt SheetsQueue.Arn
