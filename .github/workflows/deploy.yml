@@ -77,7 +77,7 @@ jobs:
             --capabilities CAPABILITY_IAM \
             --parameter-overrides \
               Environment=dev \
-              "GoogleCredentialsJson=${{ secrets.GOOGLE_CREDENTIALS_JSON }}"
+              GoogleCredentialsBase64=${{ secrets.GOOGLE_CREDENTIALS_BASE64 }}
       
       - name: Output Stack Info
         run: |
@@ -131,7 +131,7 @@ jobs:
             --capabilities CAPABILITY_IAM \
             --parameter-overrides \
               Environment=prod \
-              "GoogleCredentialsJson=${{ secrets.GOOGLE_CREDENTIALS_JSON }}"
+              GoogleCredentialsBase64=${{ secrets.GOOGLE_CREDENTIALS_BASE64 }}
       
       - name: Output Stack Info
         run: |
