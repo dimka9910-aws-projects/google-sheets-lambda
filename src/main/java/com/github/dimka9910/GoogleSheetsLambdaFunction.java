@@ -19,9 +19,11 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 
@@ -38,10 +40,21 @@ public class GoogleSheetsLambdaFunction implements RequestHandler<SQSEvent, Stri
     SheetsFinancialService sheetsFinancialService = new SheetsFinancialService(service);
 
     private static Sheets getService() throws IOException, GeneralSecurityException {
-        // Load client secrets.
-        InputStream in = GoogleSheetsLambdaFunction.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
-        if (in == null) {
-            throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
+        // Try to load credentials from environment variable first (for Lambda deployment)
+        String credentialsJson = System.getenv("GOOGLE_CREDENTIALS_JSON");
+        InputStream in;
+        
+        if (credentialsJson != null && !credentialsJson.isBlank()) {
+            log.info("Loading Google credentials from environment variable");
+            in = new ByteArrayInputStream(credentialsJson.getBytes(StandardCharsets.UTF_8));
+        } else {
+            // Fallback to file (for local development)
+            log.info("Loading Google credentials from resource file");
+            in = GoogleSheetsLambdaFunction.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
+            if (in == null) {
+                throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH + 
+                    ". Set GOOGLE_CREDENTIALS_JSON env var or add service-acc.json to resources.");
+            }
         }
 
         GoogleCredentials credentials = ServiceAccountCredentials.fromStream(in)
