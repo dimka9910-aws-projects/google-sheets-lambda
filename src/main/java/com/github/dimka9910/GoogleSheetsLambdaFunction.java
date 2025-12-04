@@ -40,20 +40,18 @@ public class GoogleSheetsLambdaFunction implements RequestHandler<SQSEvent, Stri
     SheetsFinancialService sheetsFinancialService = new SheetsFinancialService(service);
 
     private static Sheets getService() throws IOException, GeneralSecurityException {
-        // Try to load credentials from environment variable first (for Lambda deployment)
+        // Try environment variable first (for Lambda), fallback to file (for local dev)
         String credentialsJson = System.getenv("GOOGLE_CREDENTIALS_JSON");
         InputStream in;
         
         if (credentialsJson != null && !credentialsJson.isBlank()) {
-            log.info("Loading Google credentials from environment variable");
+            log.info("Loading Google credentials from GOOGLE_CREDENTIALS_JSON env var");
             in = new ByteArrayInputStream(credentialsJson.getBytes(StandardCharsets.UTF_8));
         } else {
-            // Fallback to file (for local development)
             log.info("Loading Google credentials from resource file");
             in = GoogleSheetsLambdaFunction.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
             if (in == null) {
-                throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH + 
-                    ". Set GOOGLE_CREDENTIALS_JSON env var or add service-acc.json to resources.");
+                throw new FileNotFoundException("Set GOOGLE_CREDENTIALS_JSON env var or add " + CREDENTIALS_FILE_PATH);
             }
         }
 
