@@ -13,6 +13,12 @@ Parameters:
     Type: String
     Default: prod
     AllowedValues: [dev, prod]
+  
+  GoogleCredentialsJson:
+    Type: String
+    Description: Google Service Account credentials JSON
+    NoEcho: true
+    Default: ""
 
 Resources:
   # ============ LAMBDA ============
@@ -23,6 +29,9 @@ Resources:
       Handler: com.github.dimka9910.GoogleSheetsLambdaFunction::handleRequest
       CodeUri: .
       Description: Processes SQS messages and writes to Google Sheets
+      Environment:
+        Variables:
+          GOOGLE_CREDENTIALS_JSON: !Ref GoogleCredentialsJson
       Policies:
         - SQSPollerPolicy:
             QueueName: !GetAtt SheetsQueue.QueueName
