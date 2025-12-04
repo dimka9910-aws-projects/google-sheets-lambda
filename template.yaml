@@ -14,9 +14,9 @@ Parameters:
     Default: prod
     AllowedValues: [dev, prod]
   
-  GoogleCredentialsJson:
+  GoogleCredentialsBase64:
     Type: String
-    Description: Google Service Account credentials JSON
+    Description: Google Service Account credentials (base64 encoded)
     NoEcho: true
     Default: ""
 
@@ -31,7 +31,7 @@ Resources:
       Description: Processes SQS messages and writes to Google Sheets
       Environment:
         Variables:
-          GOOGLE_CREDENTIALS_JSON: !Ref GoogleCredentialsJson
+          GOOGLE_CREDENTIALS_BASE64: !Ref GoogleCredentialsBase64
       Policies:
         - SQSPollerPolicy:
             QueueName: !GetAtt SheetsQueue.QueueName
