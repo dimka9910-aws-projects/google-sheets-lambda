@@ -1,0 +1,45 @@
+name: Cleanup Old Artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      keep_count:
+        description: 'Number of artifacts to keep (default: 10)'
+        required: false
+        default: '10'
+        type: string
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_run:
+    workflows: ["Build and Deploy"]
+    types:
+      - completed
+
+jobs:
+  cleanup:
+    name: Cleanup Old Artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Set keep count
+        id: set_count
+        run: |
+          KEEP_COUNT="${{ github.event.inputs.keep_count || '10' }}"
+          echo "keep_count=${KEEP_COUNT}" >> $GITHUB_OUTPUT
+          echo "Will keep last ${KEEP_COUNT} artifacts of each type"
+
+      - name: Delete old artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: lambda-package
+          failOnError: false
+          deleteMode: keep-last-n
+          keepLastN: ${{ steps.set_count.outputs.keep_count }}
+
+      - name: Summary
+        run: |
+          echo "✅ Artifact cleanup completed"
+          echo "Kept last ${{ steps.set_count.outputs.keep_count }} artifacts"
